@@ -26,6 +26,20 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+input, textarea {
+  @apply bg-transparent border-0 outline-none
+}
+
+button {
+  @apply rounded bg-[#F71963] p-2 text-white transition hover:bg-[#ff3478];
+}
+
+@layer components {
+  .input-container {
+    @apply rounded bg-slate-100 p-2;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
