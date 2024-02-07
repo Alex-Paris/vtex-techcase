@@ -20,9 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   const subjectObj =
-    orders ||
-    payments ||
-    (catalog as Omit<FormInputs['catalog'], 'printOfPage'>)
+    orders || payments || (catalog && { skuId: catalog?.skuId })
 
   if (!subjectObj) {
     return res.json({ error: 'Missing subject' }, { status: 400 })
