@@ -1,9 +1,11 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
+import { Combobox } from './Combobox'
 import { Input } from './Input'
 import { RichText } from './RichText'
 
@@ -15,64 +17,59 @@ const formSchema = z.object({
       message: 'Please, insert a smaller text!',
     }),
   email: z.string().email({ message: 'Please, insert a valid email!' }),
-  subject: z
-    .string()
-    .min(5, {
-      message: 'Please, insert a subject with more than 5 characters!',
+  subject: z.enum(['Orders', 'Payments', 'Catalog', 'Others']),
+
+  // Other
+  Others: z
+    .object({
+      detailing: z
+        .string()
+        .min(10, {
+          message:
+            'Please, insert a detailing info about your request with more than 10 characters!',
+        })
+        .max(500, {
+          message: 'Please, insert a smaller text!',
+        }),
     })
-    .max(500, {
-      message: 'Please, insert a smaller text!',
-    }),
-  detailing: z
-    .string()
-    .min(10, {
-      message:
-        'Please, insert a detailing info about your request with more than 10 characters!',
-    })
-    .max(500, {
-      message: 'Please, insert a smaller text!',
-    }),
+    .optional(),
 })
 
-type FormInputs = z.infer<typeof formSchema>
+export type FormInputs = z.infer<typeof formSchema>
 
 export function Form() {
   const {
+    watch,
     register,
     handleSubmit,
-    reset,
     formState: { isSubmitting, errors, dirtyFields },
   } = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
   })
 
+  const selectedOption = watch('subject')
+
+  const subjectList = useMemo(
+    () => ['Orders', 'Payments', 'Catalog', 'Others'],
+    [],
+  )
+
   async function handleSendEmail(form: FormInputs) {
+    return alert(JSON.stringify(form))
+
     try {
-      // const sectorIndex = sectors.findIndex((s) => s.name === form.sector)
-      // const to = sectors[sectorIndex].email || 'secretaria@funada.com.br'
+      const res = await fetch('/api', {
+        method: 'POST',
+        body: JSON.stringify(form),
+      })
 
-      // const sendData: IEmailContactPostProps = {
-      //   ...form,
-      //   to,
-      //   sector: form.sector,
-      //   contact: 'Contato',
-      //   subject: `* [Envio de Contato ${form.sector}] - ${form.name} *`,
-      // }
+      const data = await res.json()
 
-      // const res = await fetch('/contato/api/email-routes/contact', {
-      //   method: 'POST',
-      //   body: JSON.stringify(sendData),
-      // })
+      if (res.status !== 201) throw new Error(data)
 
-      // if (res.status !== 200) {
-      //   const data = await res.json()
-      //   throw new Error(data)
-      // }
-
-      alert('Mensagem enviada com sucesso!')
-      reset()
+      window.location.href = data.successUrl
     } catch (error) {
-      console.log(error)
+      alert(JSON.stringify(error))
     }
   }
 
@@ -101,23 +98,31 @@ export function Form() {
         register={register('email')}
       />
 
-      <Input
-        type="text"
-        placeholder="Subject"
+      <Combobox
+        placeholder="Choose a subject"
+        list={subjectList}
         isEdited={dirtyFields.subject}
         disabled={isSubmitting}
         error={errors.subject}
         register={register('subject')}
       />
 
-      <RichText
-        placeholder="Detailing"
-        isEdited={dirtyFields.detailing}
+      {selectedOption === 'Others' && (
+        <RichText
+          placeholder="Detailing"
+          isEdited={dirtyFields.Others?.detailing}
+          disabled={isSubmitting}
+          error={errors.Others?.detailing}
+          register={register('Others.detailing')}
+        />
+      )}
+
+      <button
         disabled={isSubmitting}
-        error={errors.detailing}
-        register={register('detailing')}
-      />
-      <button>Submit</button>
+        className="disabled:cursor-not-allowed disabled:bg-slate-500"
+      >
+        Submit
+      </button>
     </form>
   )
 }
